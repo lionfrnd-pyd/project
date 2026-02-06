@@ -168,6 +168,7 @@ if uploaded_file:
 
             # 시각화: 전년 vs 올해 점수 산점도
             st.write("**전년도 점수 vs 올해 점수 비교**")
+            '''한글 깨짐으로 변경함
             fig6, ax6 = plt.subplots(figsize=(10, 6))
             # 대각선(y=x)을 그려서 선 위에 있으면 성적이 오른 사람, 아래면 떨어진 사람
             sns.scatterplot(data=df, x='전년도총점', y='총점', hue='부서', size='점수변화량', sizes=(20, 200), ax=ax6)
@@ -178,6 +179,16 @@ if uploaded_file:
             ax6.plot(lims, lims, 'r--', alpha=0.5, zorder=0)  # 기준선(y=x)
             ax6.set_xlabel("2024년 총점 (전년)")
             ax6.set_ylabel("2025년 총점 (당해)")
+            '''
+            # 아래 구문으로 한글깨짐 대체
+            fig6 = px.scatter(
+            df, x='전년도총점', y='총점', 
+            color='부서', size='점수변화량',
+            hover_name='성명',
+            labels={'전년도총점': '2024년 총점 (전년)', '총점': '2025년 총점 (당해)'},
+            template='plotly_white'
+        )
+            # 아래 구문으로 한글깨짐 대체(여기까지)
             st.pyplot(fig6)
             st.info("빨간 점선 위에 위치한 인원이 전년 대비 성적이 향상된 직원들입니다.")
         else:
@@ -268,4 +279,5 @@ if uploaded_file:
                              color_discrete_map={'역량점수': '#636EFA', '성과점수': '#EF553B'},
                              template='plotly_white')
         st.plotly_chart(fig_balance, use_container_width=True)
+
         st.info("직급이 높아질수록 역량과 성과 점수가 균형 있게 동반 상승하는 것이 이상적입니다.")
