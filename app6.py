@@ -71,7 +71,7 @@ if uploaded_file:
                 title="직급별 평균 총점 비교",
                 template='plotly_white'
             )
-            st.plotly_chart(fig_rank, use_container_width=True)
+            st.plotly_chart(fig_rank, width='stretch')
 
             # 부서별 점수 분포 (Box Plot)
             st.subheader("부서별 성과 점수 분포")
@@ -81,7 +81,7 @@ if uploaded_file:
                 hover_data=['성명', '직급', '사번'],
                 template='plotly_white'
             )
-            st.plotly_chart(fig_dept, use_container_width=True)
+            st.plotly_chart(fig_dept, width='stretch')
 
     with tab2:
         st.subheader("성과-역량 9-Box Matrix")
@@ -103,7 +103,7 @@ if uploaded_file:
         fig1.add_vline(x=df['역량점수'].mean(), line_dash="dash", line_color="red")
         fig1.add_hline(y=df['성과점수'].mean(), line_dash="dash", line_color="red")
 
-        st.plotly_chart(fig1, use_container_width=True)
+        st.plotly_chart(fig1, width='stretch')
 
     with tab3:
         st.subheader("전년 대비 성과 변화 추적")
@@ -127,7 +127,7 @@ if uploaded_file:
             fig2.add_shape(type="line", x0=0, y0=0, x1=max_val, y1=max_val,
                            line=dict(color="Gray", dash="dash"))
 
-            st.plotly_chart(fig2, use_container_width=True)
+            st.plotly_chart(fig2, width='stretch')
             st.info("점선보다 위에 있는 점이 전년 대비 성적이 오른 직원입니다.")
 
     with tab4:
@@ -152,6 +152,8 @@ if uploaded_file:
         if '전년도총점' in df.columns:
             # 변화량 및 변화율 계산
             df['점수변화량'] = df['총점'] - df['전년도총점']
+            # 핵심: size에 사용할 절대값 컬럼을 별도로 생성
+            df['변화량_절대값'] = df['점수변화량'].abs()
             df['성장률(%)'] = (df['점수변화량'] / df['전년도총점'] * 100).replace([np.inf, -np.inf], 0)
 
             col_up, col_down = st.columns(2)
@@ -168,28 +170,30 @@ if uploaded_file:
 
             # 시각화: 전년 vs 올해 점수 산점도
             st.write("**전년도 점수 vs 올해 점수 비교**")
-            '''한글 깨짐으로 변경함
-            fig6, ax6 = plt.subplots(figsize=(10, 6))
-            # 대각선(y=x)을 그려서 선 위에 있으면 성적이 오른 사람, 아래면 떨어진 사람
-            sns.scatterplot(data=df, x='전년도총점', y='총점', hue='부서', size='점수변화량', sizes=(20, 200), ax=ax6)
-            lims = [
-                np.min([ax6.get_xlim(), ax6.get_ylim()]),  # 최소값
-                np.max([ax6.get_xlim(), ax6.get_ylim()]),  # 최대값
-            ]
-            ax6.plot(lims, lims, 'r--', alpha=0.5, zorder=0)  # 기준선(y=x)
-            ax6.set_xlabel("2024년 총점 (전년)")
-            ax6.set_ylabel("2025년 총점 (당해)")
-            '''
-            # 아래 구문으로 한글깨짐 대체
+
             fig6 = px.scatter(
-            df, x='전년도총점', y='총점', 
-            color='부서', size='점수변화량',
-            hover_name='성명',
-            labels={'전년도총점': '2024년 총점 (전년)', '총점': '2025년 총점 (당해)'},
-            template='plotly_white'
-        )
-            # 아래 구문으로 한글깨짐 대체(여기까지)
-            st.pyplot(fig6)
+                df, x='전년도총점', y='총점',
+                color='부서', size='변화량_절대값',
+                hover_name='성명',
+                labels={'전년도총점': '2024년 총점 (전년)', '총점': '2025년 총점 (당해)'},
+                template='plotly_white'
+            )
+
+            # --- 빨간색 점선(y=x 기준선) 추가 시작 ---
+            # 차트의 범위를 결정하기 위해 최대/최소값 계산
+            max_val = max(df['총점'].max(), df['전년도총점'].max())
+            min_val = min(df['총점'].min(), df['전년도총점'].min())
+
+            fig6.add_shape(
+                type="line",
+                x0=min_val, y0=min_val, x1=max_val, y1=max_val,
+                line=dict(color="Red", width=2, dash="dash"),
+                layer="below"  # 점이 선 위에 오도록 설정
+            )
+            # --- 빨간색 점선 추가 끝 ---
+
+            st.plotly_chart(fig6, width='stretch')
+
             st.info("빨간 점선 위에 위치한 인원이 전년 대비 성적이 향상된 직원들입니다.")
         else:
             st.warning("데이터에 '전년도총점' 컬럼이 없습니다. 분석을 위해 전년도 데이터를 포함해 주세요.")
@@ -230,7 +234,7 @@ if uploaded_file:
         dept_std = df.groupby('부서')['총점'].std().sort_values(ascending=False).reset_index()
         fig_std = px.bar(dept_std, x='부서', y='총점', title="부서 내 성과 불균형(표준편차)",
                          labels={'총점': '점수 편차'}, template='plotly_white')
-        st.plotly_chart(fig_std, use_container_width=True)
+        st.plotly_chart(fig_std, width='stretch')
 
     with tab8:
         st.subheader("조직 인재 밀도 및 성장 엔진 분석")
@@ -250,7 +254,7 @@ if uploaded_file:
             fig_density = px.bar(talent_density, x='부서', y='고성과자 비중(%)',
                                  color='고성과자 비중(%)', color_continuous_scale='Greens',
                                  text_auto='.1f', template='plotly_white')
-            st.plotly_chart(fig_density, use_container_width=True)
+            st.plotly_chart(fig_density, width='stretch')
 
         with col_engine2:
             # 2. 근속 구간별 성과 분포 (Binning)
@@ -263,7 +267,7 @@ if uploaded_file:
             st.write("**⏳ 근속 구간별 평균 성과**")
             fig_tenure = px.line(tenure_perf, x='근속구간', y='총점', markers=True,
                                  title="근속 기간에 따른 성과 성장 곡선", template='plotly_white')
-            st.plotly_chart(fig_tenure, use_container_width=True)
+            st.plotly_chart(fig_tenure, width='stretch')
 
         st.divider()
 
@@ -278,6 +282,5 @@ if uploaded_file:
                              category_orders={'직급': rank_order},
                              color_discrete_map={'역량점수': '#636EFA', '성과점수': '#EF553B'},
                              template='plotly_white')
-        st.plotly_chart(fig_balance, use_container_width=True)
-
+        st.plotly_chart(fig_balance, width='stretch')
         st.info("직급이 높아질수록 역량과 성과 점수가 균형 있게 동반 상승하는 것이 이상적입니다.")
